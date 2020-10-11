@@ -17,14 +17,17 @@ WiFiServer server(80);
 String header;
 
 // Auxiliar variables to store the current output state
-String output25State = "off";
-String output26State = "off";
-String output27State = "off";
+String blueState = "off";
+String greenState = "off";
+String redState = "off";
+int lightValue, lightInit;
+String color;
 
-// Assign output variables to GPIO pins
-const int output25 = 25;
-const int output26 = 26;
-const int output27 = 27;
+// Define as saídas para seus pinos GPIO
+const int photoresistor = 35;
+const int blue = 25;
+const int green = 26;
+const int red = 27;
 
 // Current time
 unsigned long currentTime = millis();
@@ -33,17 +36,48 @@ unsigned long previousTime = 0;
 // Define timeout time in milliseconds (example: 2000ms = 2s)
 const long timeoutTime = 2000;
 
+//Funções responsáveis por executar o brilho selecionado
+void redColor(){
+  digitalWrite(blue, LOW);
+  digitalWrite(green, LOW);
+  digitalWrite(red, HIGH);
+}
+void blueColor(){
+  digitalWrite(blue, HIGH);
+  digitalWrite(green, LOW);
+  digitalWrite(red, LOW);
+}
+void greenColor(){
+  digitalWrite(blue, LOW);
+  digitalWrite(green, HIGH);
+  digitalWrite(red, LOW);
+}
+void whiteColor(){
+  digitalWrite(blue, HIGH);
+  digitalWrite(green, HIGH);
+  digitalWrite(red, HIGH);
+}
+void blackOut(){
+  digitalWrite(blue, LOW);
+  digitalWrite(green, LOW);
+  digitalWrite(red, LOW);
+}
+
 void setup() {
   Serial.begin(115200);
   // Initialize the output variables as outputs
-  pinMode(output25, OUTPUT);
-  pinMode(output26, OUTPUT);
-  pinMode(output27, OUTPUT);
+  pinMode(photoresistor, OUTPUT);
+  pinMode(blue, OUTPUT);
+  pinMode(green, OUTPUT);
+  pinMode(red, OUTPUT);
   // Set outputs to LOW
-  digitalWrite(output25, LOW);
-  digitalWrite(output26, LOW);
-  digitalWrite(output27, LOW);
+  digitalWrite(photoresistor, LOW);
+  digitalWrite(blue, LOW);
+  digitalWrite(green, LOW);
+  digitalWrite(red, LOW);
 
+  // Começa a leitura do valor de luminosidade
+  lightInit = analogRead(photoresistor);
   // Connect to Wi-Fi network with SSID and password
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -61,8 +95,14 @@ void setup() {
 }
 
 void loop(){
-  WiFiClient client = server.available();   // Listen for incoming clients
-
+  // WiFiClient client = server.available();   // Listen for incoming clients
+  lightValue = analogRead(photoresistor);   // Leitura de luminosidade
+  if(lightValue - lightInit <  50){
+      whiteColor();
+  }else{
+      blackOut();
+  }
+/*
   if (client) {                             // If a new client connects,
     currentTime = millis();
     previousTime = currentTime;
@@ -88,28 +128,28 @@ void loop(){
             // turns the GPIOs on and off
             if (header.indexOf("GET /25/on") >= 0) {
               Serial.println("GPIO 25 on");
-              output25State = "on";
-              digitalWrite(output25, HIGH);
+              blueState = "on";
+              digitalWrite(blue, HIGH);
             } else if (header.indexOf("GET /25/off") >= 0) {
               Serial.println("GPIO 25 off");
-              output25State = "off";
-              digitalWrite(output25, LOW);
+              blueState = "off";
+              digitalWrite(blue, LOW);
             } else if (header.indexOf("GET /26/on") >= 0) {
               Serial.println("GPIO 26 on");
-              output26State = "on";
-              digitalWrite(output26, HIGH);
+              greenState = "on";
+              digitalWrite(green, HIGH);
             } else if (header.indexOf("GET /26/off") >= 0) {
               Serial.println("GPIO 26 off");
-              output26State = "off";
-              digitalWrite(output26, LOW);
+              greenState = "off";
+              digitalWrite(green, LOW);
             } else if (header.indexOf("GET /27/on") >= 0) {
               Serial.println("GPIO 27 on");
-              output27State = "on";
-              digitalWrite(output27, HIGH);
+              redState = "on";
+              digitalWrite(red, HIGH);
             } else if (header.indexOf("GET /27/off") >= 0) {
               Serial.println("GPIO 27 off");
-              output27State = "off";
-              digitalWrite(output27, LOW);
+              redState = "off";
+              digitalWrite(red, LOW);
             }
             
             
@@ -129,27 +169,27 @@ void loop(){
             client.println("<body><h1>ESP32 Web Server</h1>");
             
             // Display current state, and ON/OFF buttons for GPIO 25 
-            client.println("<p>GPIO 25 - State " + output25State + "</p>");
-            // If the output25State is off, it displays the ON button       
-            if (output25State=="off") {
+            client.println("<p>GPIO 25 - State " + blueState + "</p>");
+            // If the blueState is off, it displays the ON button       
+            if (blueState=="off") {
               client.println("<p><a href=\"/25/on\"><button class=\"button\">ON</button></a></p>");
             } else {
               client.println("<p><a href=\"/25/off\"><button class=\"button button2 button3\">OFF</button></a></p>");
             } 
 
             // Display current state, and ON/OFF buttons for GPIO 26  
-            client.println("<p>GPIO 26 - State " + output26State + "</p>");
-            // If the output26State is off, it displays the ON button       
-            if (output26State=="off") {
+            client.println("<p>GPIO 26 - State " + greenState + "</p>");
+            // If the greenState is off, it displays the ON button       
+            if (greenState=="off") {
               client.println("<p><a href=\"/26/on\"><button class=\"button\">ON</button></a></p>");
             } else {
               client.println("<p><a href=\"/26/off\"><button class=\"button button2 button3\">OFF</button></a></p>");
             } 
                
             // Display current state, and ON/OFF buttons for GPIO 27  
-            client.println("<p>GPIO 27 - State " + output27State + "</p>");
-            // If the output27State is off, it displays the ON button       
-            if (output27State=="off") {
+            client.println("<p>GPIO 27 - State " + redState + "</p>");
+            // If the redState is off, it displays the ON button       
+            if (redState=="off") {
               client.println("<p><a href=\"/27/on\"><button class=\"button\">ON</button></a></p>");
             } else {
               client.println("<p><a href=\"/27/off\"><button class=\"button button2 button3\">OFF</button></a></p>");
@@ -174,5 +214,5 @@ void loop(){
     client.stop();
     Serial.println("Client disconnected.");
     Serial.println("");
-  }
+  }*/
 }
