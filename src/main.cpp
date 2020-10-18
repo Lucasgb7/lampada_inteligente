@@ -24,16 +24,12 @@ String color;
 
 // Define as saídas para seus pinos GPIO
 const int photoresistor = 35;
-const int bluePin = 25;
-const int greenPin = 26;
-const int redPin = 27;
+const int bluePin = 4;
+const int greenPin = 2;
+const int redPin = 15;
 
-// Configurações PWM
-const int freq = 5000;
-const int redChannel = 0;
-const int greenChannel = 1;
-const int blueChannel = 2;
-const int resolution = 8;
+// Estado do LED
+bool led_on = false;  
 
 // Current time
 unsigned long currentTime = millis();
@@ -63,16 +59,26 @@ void whiteColor(){
   digitalWrite(greenPin, HIGH);
   digitalWrite(redPin, HIGH);
 }
+void yellowColor(){
+  digitalWrite(bluePin, LOW);
+  digitalWrite(greenPin, HIGH);
+  digitalWrite(redPin, HIGH);
+}
+void magentaColor(){
+  digitalWrite(bluePin, HIGH);
+  digitalWrite(greenPin, LOW);
+  digitalWrite(redPin, HIGH);
+}
+void cyanColor(){
+  digitalWrite(bluePin, HIGH);
+  digitalWrite(greenPin, HIGH);
+  digitalWrite(redPin, LOW);
+}
+
 void blackOut(){
   digitalWrite(bluePin, LOW);
   digitalWrite(greenPin, LOW);
   digitalWrite(redPin, LOW);
-}
-
-void RGB_color(int redValue, int greenValue, int blueValue){
-  analogWrite(redPin, redValue);
-  analogWrite(greenPin, greenValue);
-  analogWrite(bluePin, blueValue);
 }
 
 void setup() {
@@ -106,6 +112,7 @@ void setup() {
 
 void loop()
 {
+  
   WiFiClient client = server.available();   // Servidor disponivel para acesso
   // Leitura de Luminosidade
   /*
@@ -138,35 +145,69 @@ void loop()
             client.println("Connection: close");
             client.println();
             
+            // Botões para escolher a cor
+            if (header.indexOf("white") != -1) {
+              Serial.println("BRANCO");
+              whiteColor();
+            }
+            if (header.indexOf("red") != -1) {
+              Serial.println("VERMELHO");
+              redColor();
+            }
+            if (header.indexOf("green") != -1) {
+              Serial.println("VERDE");
+              greenColor();
+            }
+            if (header.indexOf("blue") != -1) {
+              Serial.println("AZUL");
+              blueColor();
+            }
+            if (header.indexOf("yellow") != -1) {
+              Serial.println("AMARELO");
+              yellowColor();
+            }
+            if (header.indexOf("magenta") != -1) {
+              Serial.println("MAGENTA");
+              magentaColor();
+            }
+            if (header.indexOf("cyan") != -1) {
+              Serial.println("CYANO");
+              cyanColor();
+            }
+
             // Pagina Web em HTML
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<link rel=\"icon\" href=\"data:,\">");
-            client.println("<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css\">");
-            client.println("<script src=\"https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js\"></script>");
-            client.println("</head><body><div class=\"container\"><div class=\"row\"><h1>ESP Color Picker</h1></div>");
-            client.println("<a class=\"btn btn-primary btn-lg\" href=\"#\" id=\"change_color\" role=\"button\">Change Color</a> ");
-            client.println("<input class=\"jscolor {onFineChange:'update(this)'}\" id=\"rgb\"></div>");
-            client.println("<script>function update(picker) {document.getElementById('rgb').innerHTML = Math.round(picker.rgb[0]) + ', ' +  Math.round(picker.rgb[1]) + ', ' + Math.round(picker.rgb[2]);");
-            client.println("document.getElementById(\"change_color\").href=\"?r\" + Math.round(picker.rgb[0]) + \"g\" +  Math.round(picker.rgb[1]) + \"b\" + Math.round(picker.rgb[2]) + \"&\";}</script></body></html>");
-            // The HTTP response ends with another blank line
-            client.println();
+            client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+            client.println(".button1 { background-color: #FFFFFF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
+            client.println(".button2 { background-color: #FF0000; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
+            client.println(".button3 { background-color: #FFFF00; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
+            client.println(".button4 { background-color: #00FF00; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
+            client.println(".button5 { background-color: #00FFFF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
+            client.println(".button6 { background-color: #0000FF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
+            client.println(".button7 { background-color: #FF00FF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
 
-            // Request sample: /?r201g32b255&
-            // Red = 201 | Green = 32 | Blue = 255
-            if(header.indexOf("GET /?r") >= 0) {
-              pos1 = header.indexOf('r');
-              pos2 = header.indexOf('g');
-              pos3 = header.indexOf('b');
-              pos4 = header.indexOf('&');
-              redString = header.substring(pos1+1, pos2);
-              greenString = header.substring(pos2+1, pos3);
-              blueString = header.substring(pos3+1, pos4);
-              /*Serial.println(redString.toInt());
-              Serial.println(greenString.toInt());
-              Serial.println(blueString.toInt());*/
-              RGB_color(redString.toInt(), greenString.toInt(), blueString.toInt());
-            // Break out of the while loop
+            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
+
+            // Cabeçalho da pagina WEB
+            client.println("</style></head>");
+            client.println("<body><center><h1>Prototipo de Lampada Inteligente</h1></center>");
+
+            // Botões para escolher uma cor
+            client.println("<form><center>"); 
+            client.println("<p> Escolha uma cor </p></center>");
+            client.println("<div class=\"btn-group\">");
+            client.println("<button class=\"button1\" name=\"colorLED\" value=\"white\" type=\"submit\"> </button>");
+            client.println("<button class=\"button2\" name=\"colorLED\" value=\"red\" type=\"submit\"> </button>");
+            client.println("<button class=\"button3\" name=\"colorLED\" value=\"yellow\" type=\"submit\"> </button>");
+            client.println("<button class=\"button4\" name=\"colorLED\" value=\"green\" type=\"submit\"> </button>");
+            client.println("<button class=\"button5\" name=\"colorLED\" value=\"cyan\" type=\"submit\"> </button>");
+            client.println("<button class=\"button6\" name=\"colorLED\" value=\"blue\" type=\"submit\"> </button>");
+            client.println("<button class=\"button7\" name=\"colorLED\" value=\"magenta\" type=\"submit\"> </button>");
+            client.println("</div></form></body></html>");
+            // The HTTP response ends with another blank line
+
             break;
           } else { // if you got a newline, then clear currentLine
             currentLine = "";
@@ -183,5 +224,4 @@ void loop()
     Serial.println("Client disconnected.");
     Serial.println("");
     }
-  }
 }
