@@ -2,8 +2,8 @@
 #include <analogWrite.h>
 
 // Definindo as credenciais da rede Wi-Fi
-const char *ssid = "Assembly";
-const char *password = "#code1304";
+const char *ssid = "Unifique_WIFI_6387";
+const char *password = "68866696";
 
 // Define a porta do server como 80
 WiFiServer server(80);
@@ -189,7 +189,7 @@ void loop()
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<link rel=\"icon\" href=\"data:,\">");
             client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
-            client.println(".buttonPower { background-image: \"powerButton.png\"; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
+            client.println(".buttonPower { border: 2px solid #000000; border-radius: 50%; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button1 { background-color: #FFFFFF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button2 { background-color: #FF0000; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button3 { background-color: #FFFF00; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
@@ -197,21 +197,30 @@ void loop()
             client.println(".button5 { background-color: #00FFFF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button6 { background-color: #0000FF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button7 { background-color: #FF00FF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
-
-            client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
+            client.println(".slidecontainer { width: 100%; }");
+            client.println(".slider { -webkit-appearance: none; width: 100%; height: 10px; border-radius: 5px; background: #d3d3d3; outline: none; opacity: 0.7; -webkit-transition: .2s; transition: opacity .2s; }");
+            client.println(".slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 23px; height: 24px; border: 0; background: \"contrasticon.png\"; cursor: pointer; }");
+            client.println(".slider::-moz-range-thumb { width: 23px; height: 24px; border: 0; background: \"contrasticon.png\"; cursor: pointer; }");
 
             // Cabeçalho da pagina WEB
             client.println("</style></head>");
-            client.println("<body><center><h1>Prototipo de Lampada Inteligente</h1></center>");
+            client.println("<body><center><h1>Lampada Inteligente</h1></center><br>");
 
             // Corpo
             // Botao de Power
-            client.println("<form><center>");
+            client.println("<form id=\"myForm\"><center>");
+            client.println("<h3>Ligar/Desligar</h3>");
             client.println("<div class=\"btn-group\">");
-            client.println("<button class=\"buttonPower\" name=\"power\" value=\"on/off\" type=\"submit\"> </button>");
-            client.println("</div>");
+            client.println("<button class=\"buttonPower\" name=\"power\" value=\"on/off\" type=\"submit\"><img src=\"powerButton.png\"></button>");
+            client.println("</div><br>");
+            // Slider de Brilho
+            client.println("<h3>Brilho</h3>");
+            client.println("<div class=\"slidecontainer\">");
+            client.println("<input name=\"brightness\" type=\"range\" min=\"1\" max=\"100\" value=\"50\" class=\"slider\" id=\"myRange\">");
+            client.println("</div><br>");
+
             // Botoes de Cores
-            client.println("<p> Escolha uma cor </p></center>");
+            client.println("<h3>Cor</h3></center>");
             client.println("<div class=\"btn-group\">");
             client.println("<button class=\"button1\" name=\"colorLED\" value=\"white\" type=\"submit\"> </button>");
             client.println("<button class=\"button2\" name=\"colorLED\" value=\"red\" type=\"submit\"> </button>");
@@ -220,7 +229,12 @@ void loop()
             client.println("<button class=\"button5\" name=\"colorLED\" value=\"cyan\" type=\"submit\"> </button>");
             client.println("<button class=\"button6\" name=\"colorLED\" value=\"blue\" type=\"submit\"> </button>");
             client.println("<button class=\"button7\" name=\"colorLED\" value=\"magenta\" type=\"submit\"> </button>");
-            client.println("</div></form></body></html>");
+            client.println("</div></form>");
+
+            // Script
+            client.println("<script>");
+            client.println("var slider = document.getElementById(\"myRange\"); slider.onmouseup = function() { document.getElementById(\"myForm\").submit(); } slider.ontouchend = function() { document.getElementById(\"myForm\").submit(); }");
+            client.println("</script></body></html>");
             break;
           }
           else { // caso ter uma nova linha, limpa a linha atual
