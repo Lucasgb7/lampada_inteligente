@@ -18,11 +18,11 @@ bool ledState = false;
 long duration;
 
 // Define as saídas para seus pinos GPIO
-const int redPin = 15;
-const int greenPin = 2;
-const int bluePin = 4;
-const int photoresistor = 5;
-const int powerButton = 18;
+const int redPin = 15;    // R = 330 Ohm
+const int greenPin = 2;   // R = 330 Ohm
+const int bluePin = 4;    // R = 330 Ohm
+const int photoresistor = 5;  // R = 10K Ohm
+const int powerButton = 18;   // R = 10K Ohm
 const int trig = 19;
 const int echo = 21;
 
