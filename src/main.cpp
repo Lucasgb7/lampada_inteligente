@@ -2,8 +2,8 @@
 #include <analogWrite.h>
 
 // Definindo as credenciais da rede Wi-Fi
-const char* ssid = "Assembly";
-const char* password = "#code1304";
+const char *ssid = "Assembly";
+const char *password = "#code1304";
 
 // Define a porta do server como 80
 WiFiServer server(80);
@@ -11,83 +11,87 @@ WiFiServer server(80);
 // Variavel para armazenar o HTTP request
 String header;
 
-// Auxiliar variables to store the current output state
-String redString = "0";
-String greenString = "0";
-String blueString = "0";
-int pos1 = 0;
-int pos2 = 0;
-int pos3 = 0;
-int pos4 = 0;
-int lightValue, lightInit;
-String color;
+// Variaveis auxiliares para fotoresistor e estado do botao de ligado/desligado
+int lightValue, lightInit, distance;
+bool powerButtonState = false;
+bool ledState = false;
+long duration;
 
 // Define as saídas para seus pinos GPIO
-const int photoresistor = 35;
-const int bluePin = 4;
-const int greenPin = 2;
 const int redPin = 15;
+const int greenPin = 2;
+const int bluePin = 4;
+const int photoresistor = 5;
+const int powerButton = 18;
+const int trig = 19;
+const int echo = 21;
 
-// Estado do LED
-bool led_on = false;  
-
-// Current time
+// Retorna o tempo atual em milisegundos
 unsigned long currentTime = millis();
-// Previous time
-unsigned long previousTime = 0; 
-// Define timeout time in milliseconds (example: 2000ms = 2s)
+// Retorna o tempo anterior
+unsigned long previousTime = 0;
+// Define o tempo maximo em milisegundos (exemplo: 2000ms = 2s)
 const long timeoutTime = 2000;
 
-//Funções responsáveis por executar o brilho selecionado
-void redColor(){
+//Funções responsáveis por definir as cores do led RGB
+void redColor()
+{
   digitalWrite(bluePin, LOW);
   digitalWrite(greenPin, LOW);
   digitalWrite(redPin, HIGH);
 }
-void blueColor(){
+void blueColor()
+{
   digitalWrite(bluePin, HIGH);
   digitalWrite(greenPin, LOW);
   digitalWrite(redPin, LOW);
 }
-void greenColor(){
+void greenColor()
+{
   digitalWrite(bluePin, LOW);
   digitalWrite(greenPin, HIGH);
   digitalWrite(redPin, LOW);
 }
-void whiteColor(){
+void whiteColor()
+{
   digitalWrite(bluePin, HIGH);
   digitalWrite(greenPin, HIGH);
   digitalWrite(redPin, HIGH);
 }
-void yellowColor(){
+void yellowColor()
+{
   digitalWrite(bluePin, LOW);
   digitalWrite(greenPin, HIGH);
   digitalWrite(redPin, HIGH);
 }
-void magentaColor(){
+void magentaColor()
+{
   digitalWrite(bluePin, HIGH);
   digitalWrite(greenPin, LOW);
   digitalWrite(redPin, HIGH);
 }
-void cyanColor(){
+void cyanColor()
+{
   digitalWrite(bluePin, HIGH);
   digitalWrite(greenPin, HIGH);
+  digitalWrite(redPin, LOW);
+}
+void blackOut()
+{
+  digitalWrite(bluePin, LOW);
+  digitalWrite(greenPin, LOW);
   digitalWrite(redPin, LOW);
 }
 
-void blackOut(){
-  digitalWrite(bluePin, LOW);
-  digitalWrite(greenPin, LOW);
-  digitalWrite(redPin, LOW);
-}
-
-void setup() {
+void setup()
+{
   Serial.begin(115200);
-  // Inicaliza as variaveis de saida
+  // Inializa as variaveis de saida e entrada
   pinMode(photoresistor, OUTPUT);
   pinMode(bluePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
   pinMode(redPin, OUTPUT);
+  pinMode(redPin, INPUT);
   // Define as saidas desligadas
   digitalWrite(photoresistor, LOW);
   digitalWrite(bluePin, LOW);
@@ -96,45 +100,48 @@ void setup() {
   // Começa a leitura do valor de luminosidade
   lightInit = analogRead(photoresistor);
   // Conecta a rede Wi-Fi com o SSID e password
-  Serial.print("Connecting to ");
+  Serial.print("Conectando a rede ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print(".");
   }
   Serial.println("");
-  Serial.println("WiFi connected.");
-  Serial.println("IP address: ");
+  Serial.println("WiFi conectado.");
+  Serial.println("Endereco IP: ");
   Serial.println(WiFi.localIP());
   server.begin();
 }
 
 void loop()
 {
-  
-  WiFiClient client = server.available();   // Servidor disponivel para acesso
-  // Leitura de Luminosidade
-  /*
+
+  WiFiClient client = server.available(); // Servidor disponivel para acesso
+  // Leitura de luminosidade
   lightValue = analogRead(photoresistor);
-  if(lightValue - lightInit <  50){         
-      whiteColor();
-  }else{
-      blackOut();
+  if (lightValue - lightInit < 50)
+  {
+    whiteColor();
   }
-  */
-  if (client) {                             // Caso haja alguma conexao
+  else
+  {
+    blackOut();
+  }
+  if (client)
+  { // Caso haja alguma conexao
     currentTime = millis();
     previousTime = currentTime;
-    Serial.println("New Client.");
+    Serial.println("Cliente novo.");
     String currentLine = "";
-    while (client.connected() && currentTime - previousTime <= timeoutTime) {  // Enquanto o cliente ficar conectado
+    while (client.connected() && currentTime - previousTime <= timeoutTime) { // Enquanto o cliente ficar conectado
       currentTime = millis();
-      if (client.available()) {             // Caso haver algum dado para ler
+      if (client.available()){ // Caso haver algum dado para ler
         char c = client.read();
         Serial.write(c);
         header += c;
-        if (c == '\n') {                    // if the byte is a newline character
+        if (c == '\n') { // if the byte is a newline character
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
           if (currentLine.length() == 0) {
@@ -142,37 +149,39 @@ void loop()
             // and a content-type so the client knows what's coming, then a blank line:
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
-            client.println("Connection: close");
+            client.println("Conexao: fechada");
             client.println();
-            
-            // Botões para escolher a cor
-            if (header.indexOf("white") != -1) {
-              Serial.println("BRANCO");
-              whiteColor();
-            }
-            if (header.indexOf("red") != -1) {
-              Serial.println("VERMELHO");
-              redColor();
-            }
-            if (header.indexOf("green") != -1) {
-              Serial.println("VERDE");
-              greenColor();
-            }
-            if (header.indexOf("blue") != -1) {
-              Serial.println("AZUL");
-              blueColor();
-            }
-            if (header.indexOf("yellow") != -1) {
-              Serial.println("AMARELO");
-              yellowColor();
-            }
-            if (header.indexOf("magenta") != -1) {
-              Serial.println("MAGENTA");
-              magentaColor();
-            }
-            if (header.indexOf("cyan") != -1) {
-              Serial.println("CYANO");
-              cyanColor();
+            // Caso o LED esteja ligado
+            if (ledState) {
+              // Botões para escolher a cor
+              if (header.indexOf("white") != -1){
+                Serial.println("BRANCO");
+                whiteColor();
+              }
+              if (header.indexOf("red") != -1){
+                Serial.println("VERMELHO");
+                redColor();
+              }
+              if (header.indexOf("green") != -1){
+                Serial.println("VERDE");
+                greenColor();
+              }
+              if (header.indexOf("blue") != -1){
+                Serial.println("AZUL");
+                blueColor();
+              }
+              if (header.indexOf("yellow") != -1){
+                Serial.println("AMARELO");
+                yellowColor();
+              }
+              if (header.indexOf("magenta") != -1){
+                Serial.println("MAGENTA");
+                magentaColor();
+              }
+              if (header.indexOf("cyan") != -1){
+                Serial.println("CYANO");
+                cyanColor();
+              }
             }
 
             // Pagina Web em HTML
@@ -180,6 +189,7 @@ void loop()
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
             client.println("<link rel=\"icon\" href=\"data:,\">");
             client.println("<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+            client.println(".buttonPower { background-image: \"powerButton.png\"; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button1 { background-color: #FFFFFF; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button2 { background-color: #FF0000; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
             client.println(".button3 { background-color: #FFFF00; border: 2px solid #000000;; color: black; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; }");
@@ -194,8 +204,13 @@ void loop()
             client.println("</style></head>");
             client.println("<body><center><h1>Prototipo de Lampada Inteligente</h1></center>");
 
-            // Botões para escolher uma cor
-            client.println("<form><center>"); 
+            // Corpo
+            // Botao de Power
+            client.println("<form><center>");
+            client.println("<div class=\"btn-group\">");
+            client.println("<button class=\"buttonPower\" name=\"power\" value=\"on/off\" type=\"submit\"> </button>");
+            client.println("</div>");
+            // Botoes de Cores
             client.println("<p> Escolha uma cor </p></center>");
             client.println("<div class=\"btn-group\">");
             client.println("<button class=\"button1\" name=\"colorLED\" value=\"white\" type=\"submit\"> </button>");
@@ -206,14 +221,13 @@ void loop()
             client.println("<button class=\"button6\" name=\"colorLED\" value=\"blue\" type=\"submit\"> </button>");
             client.println("<button class=\"button7\" name=\"colorLED\" value=\"magenta\" type=\"submit\"> </button>");
             client.println("</div></form></body></html>");
-            // The HTTP response ends with another blank line
-
             break;
-          } else { // if you got a newline, then clear currentLine
+          }
+          else { // caso ter uma nova linha, limpa a linha atual
             currentLine = "";
           }
-        } else if (c != '\r') {  // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
+        } else if (c != '\r') { // se possuir algum outro dado, retorna o caracter
+          currentLine += c; // adiciona ele ao final da linha atual
         }
       }
     }
@@ -221,7 +235,7 @@ void loop()
     header = "";
     // Encerra a conexao
     client.stop();
-    Serial.println("Client disconnected.");
+    Serial.println("Cliente desconectado.");
     Serial.println("");
-    }
+  }
 }
