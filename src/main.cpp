@@ -1,7 +1,8 @@
 #include <WiFi.h>
 #include <analogWrite.h>
+#include "Ultrasonic.h"
 
-// Definindo as credenciais da rede Wi-Fi
+//Definindo as credenciais da rede Wi-Fi
 const char *ssid = "Unifique_WIFI_6387";
 const char *password = "68866696";
 
@@ -12,20 +13,23 @@ WiFiServer server(80);
 String header;
 
 // Variaveis auxiliares para fotoresistor e estado do botao de ligado/desligado
-int lightValue, lightInit, distance;
+static unsigned int counter = 0;
+int lightValue, distanceInit, distanceValue, ledColor = 1, delayTimer = 5;
 bool powerButtonState = false;
-bool ledState = true;
-long duration;
+long durationLED = 0;
+hw_timer_t * timer = NULL;
 
 // Define as saídas para seus pinos GPIO
-const int redPin = 15;    // R = 330 Ohm
-const int greenPin = 2;   // R = 330 Ohm
-const int bluePin = 4;    // R = 330 Ohm
-const int photoresistor = 5;  // R = 10K Ohm
-const int powerButton = 18;   // R = 10K Ohm
-const int trig = 19;
-const int echo = 21;
+const int redPin = 13;    // R = 330 Ohm
+const int greenPin = 12;   // R = 330 Ohm
+const int bluePin = 14;    // R = 330 Ohm
+const int photoresistor = 33;  // R = 10K Ohm
+const int powerButton = 32;   // R = 10K Ohm
+const int trig = 26;
+const int echo = 25;
 
+// Sensor ultrasonico
+Ultrasonic ultrasonic(trig, echo);
 // Retorna o tempo atual em milisegundos
 unsigned long currentTime = millis();
 // Retorna o tempo anterior
@@ -75,20 +79,110 @@ void blackOut(){
   digitalWrite(redPin, LOW);
 }
 
+void stopTimer(){
+    timerEnd(timer);
+    timer = NULL;
+    blackOut();
+}
+
+void cb_timer(){
+    Serial.print("Timer: ");
+    Serial.print(counter);
+    Serial.println(" segundos");
+
+    if (counter == delayTimer){
+        stopTimer();
+    }
+    counter++;
+}
+
+void startTimer(){
+    //inicialização do timer. Parametros:
+    /* 0 - seleção do timer a ser usado, de 0 a 3.
+      80 - prescaler. O clock principal do ESP32 é 80MHz. Dividimos por 80 para ter 1us por tick.
+    true - true para contador progressivo, false para regressivo
+    */
+    timer = timerBegin(0, 80, true);
+
+    /*conecta à interrupção do timer
+     - timer é a instância do hw_timer
+     - endereço da função a ser chamada pelo timer
+     - edge=true gera uma interrupção
+    */
+    timerAttachInterrupt(timer, &cb_timer, true);
+
+    /* - o timer instanciado no inicio
+       - o valor em us para 1s
+       - auto-reload. true para repetir o alarme
+    */
+    timerAlarmWrite(timer, 1000000, true); 
+
+    //ativa o alarme
+    timerAlarmEnable(timer);
+}
+
+int hcsr04(){
+    digitalWrite(trig, LOW); //SETA O PINO 6 COM UM PULSO BAIXO "LOW"
+    delayMicroseconds(2); //INTERVALO DE 2 MICROSSEGUNDOS
+    digitalWrite(trig, HIGH); //SETA O PINO 6 COM PULSO ALTO "HIGH"
+    delayMicroseconds(10); //INTERVALO DE 10 MICROSSEGUNDOS
+    digitalWrite(trig, LOW); //SETA O PINO 6 COM PULSO BAIXO "LOW" NOVAMENTE
+    //FUNÇÃO RANGING, FAZ A CONVERSÃO DO TEMPO DE
+    //RESPOSTA DO ECHO EM CENTIMETROS, E ARMAZENA
+    //NA VARIAVEL "distancia"
+    return (ultrasonic.Ranging(CM)); //VARIÁVEL GLOBAL RECEBE O VALOR DA DISTÂNCIA MEDIDA
+}
+
+void switchLED(){
+  if (lightValue < 1000){ // se o quarto estiver escuro
+    if(distanceValue < distanceInit){ // se tiver pessoa no quarto
+      switch (ledColor)
+      {
+      case 2:
+        redColor();
+        break;
+      case 3:
+        greenColor();
+        break;
+      case 4:
+        blueColor();
+        break;
+      case 5:
+        yellowColor();
+        break;
+      case 6:
+        magentaColor();
+        break;
+      case 7:
+        cyanColor();
+        break;
+      default:
+        whiteColor();
+        break;
+      }
+      counter = 0;
+      startTimer();
+    }
+  }else
+    blackOut();
+}
+
 void setup(){
   Serial.begin(115200);
   // Inializa as variaveis de saida e entrada
-  //pinMode(photoresistor, INPUT);
   pinMode(bluePin, OUTPUT);
   pinMode(greenPin, OUTPUT);
   pinMode(redPin, OUTPUT);
+  pinMode(echo, INPUT); //DEFINE O PINO COMO ENTRADA (RECEBE)
+  pinMode(trig, OUTPUT); //DEFINE O PINO COMO SAIDA (ENVIA)
   // Define as saidas desligadas
-  //digitalWrite(photoresistor, LOW);
   digitalWrite(bluePin, LOW);
   digitalWrite(greenPin, LOW);
   digitalWrite(redPin, LOW);
-  // Começa a leitura do valor de luminosidade
-  //lightInit = analogRead(photoresistor);
+  // Iniciando o LDR
+  lightValue = analogRead(photoresistor);
+  // Iniciando o sensor ultrasonico
+  distanceInit = hcsr04();
   // Conecta a rede Wi-Fi com o SSID e password
   Serial.print("Conectando a rede ");
   Serial.println(ssid);
@@ -105,17 +199,13 @@ void setup(){
 }
 
 void loop(){
-
   WiFiClient client = server.available(); // Servidor disponivel para acesso
   // Leitura de luminosidade
   lightValue = analogRead(photoresistor);
-  Serial.println(lightValue);
-  /*if (lightValue - lightInit < 50){
-    whiteColor();
+  distanceValue = hcsr04();
+  if(durationLED == 0){
+    switchLED();
   }
-  else{
-    blackOut();
-  }*/
   if (client){ // Caso haja alguma conexao
     currentTime = millis();
     previousTime = currentTime;
@@ -137,37 +227,27 @@ void loop(){
             client.println("Content-type:text/html");
             client.println("Conexao: fechada");
             client.println();
-            // Caso o LED esteja ligado
-            if (ledState) {
-              // Botões para escolher a cor
-              if (header.indexOf("white") != -1){
-                Serial.println("BRANCO");
-                whiteColor();
-              }
-              if (header.indexOf("red") != -1){
-                Serial.println("VERMELHO");
-                redColor();
-              }
-              if (header.indexOf("green") != -1){
-                Serial.println("VERDE");
-                greenColor();
-              }
-              if (header.indexOf("blue") != -1){
-                Serial.println("AZUL");
-                blueColor();
-              }
-              if (header.indexOf("yellow") != -1){
-                Serial.println("AMARELO");
-                yellowColor();
-              }
-              if (header.indexOf("magenta") != -1){
-                Serial.println("MAGENTA");
-                magentaColor();
-              }
-              if (header.indexOf("cyan") != -1){
-                Serial.println("CYANO");
-                cyanColor();
-              }
+            // Botões para escolher a cor
+            if (header.indexOf("white") != -1){
+              ledColor = 1;
+            }
+            if (header.indexOf("red") != -1){
+              ledColor = 2;
+            }
+            if (header.indexOf("green") != -1){
+              ledColor = 3;
+            }
+            if (header.indexOf("blue") != -1){
+              ledColor = 4;
+            }
+            if (header.indexOf("yellow") != -1){
+              ledColor = 5;
+            }
+            if (header.indexOf("magenta") != -1){
+              ledColor = 6;
+            }
+            if (header.indexOf("cyan") != -1){
+              ledColor = 7;
             }
 
             // Pagina Web em HTML
@@ -238,4 +318,12 @@ void loop(){
     Serial.println("Cliente desconectado.");
     Serial.println("");
   }
+
+  Serial.print("Luminosidade: ");
+  Serial.println(lightValue);
+  Serial.print("Distancia inicial: ");
+  Serial.println(distanceInit);
+  Serial.print("Distancia atual: ");
+  Serial.println(distanceValue);
+  delay(1000);
 }
