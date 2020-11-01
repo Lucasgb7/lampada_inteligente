@@ -14,9 +14,10 @@ String header;
 
 // Variaveis auxiliares para fotoresistor e estado do botao de ligado/desligado
 static unsigned int counter = 0;
-int lightValue, distanceInit, distanceValue, ledColor = 1, delayTimer = 5;
+int lightValue, distanceInit, distanceValue, ledColor = 1, delayTimer = 5, brightness = 99, positionBrightness, dutyCycle;
 bool powerButtonState = false, ledOn = false;
 hw_timer_t * timer = NULL;
+String Sbrightness = "99";
 
 // Define as saídas para seus pinos GPIO
 const int redPin = 13;    // R = 330 Ohm
@@ -35,47 +36,60 @@ unsigned long currentTime = millis();
 unsigned long previousTime = 0;
 // Define o tempo maximo em milisegundos (exemplo: 2000ms = 2s)
 const long timeoutTime = 2000;
+// setting PWM properties
+const int freq = 5000;
+const int redChannel = 0;
+const int greenChannel = 1;
+const int blueChannel = 2;
+const int resolution = 8;
 
 //Funções responsáveis por definir as cores do led RGB
 void redColor(){
-  digitalWrite(bluePin, LOW);
-  digitalWrite(greenPin, LOW);
-  digitalWrite(redPin, HIGH);
+  dutyCycle = (255 * brightness) / 100;
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 0);
 }
 void blueColor(){
-  digitalWrite(bluePin, HIGH);
-  digitalWrite(greenPin, LOW);
-  digitalWrite(redPin, LOW);
+  dutyCycle = (255 * brightness) / 100;
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, dutyCycle);
 }
 void greenColor(){
-  digitalWrite(bluePin, LOW);
-  digitalWrite(greenPin, HIGH);
-  digitalWrite(redPin, LOW);
+  dutyCycle = (255 * brightness) / 100;
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, 0);
 }
 void whiteColor(){
-  digitalWrite(bluePin, HIGH);
-  digitalWrite(greenPin, HIGH);
-  digitalWrite(redPin, HIGH);
+  dutyCycle = (255 * brightness) / 100;
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, dutyCycle);
 }
 void yellowColor(){
-  digitalWrite(bluePin, LOW);
-  digitalWrite(greenPin, HIGH);
-  digitalWrite(redPin, HIGH);
+  dutyCycle = (255 * brightness) / 100;
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, 0);
 }
 void magentaColor(){
-  digitalWrite(bluePin, HIGH);
-  digitalWrite(greenPin, LOW);
-  digitalWrite(redPin, HIGH);
+  dutyCycle = (255 * brightness) / 100;
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, dutyCycle);
 }
 void cyanColor(){
-  digitalWrite(bluePin, HIGH);
-  digitalWrite(greenPin, HIGH);
-  digitalWrite(redPin, LOW);
+  dutyCycle = (255 * brightness) / 100;
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, dutyCycle);
 }
 void blackOut(){
-  digitalWrite(bluePin, LOW);
-  digitalWrite(greenPin, LOW);
-  digitalWrite(redPin, LOW);
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 0);
 }
 
 void stopTimer(){
@@ -175,16 +189,24 @@ void personDetection(){
 void setup(){
   Serial.begin(115200);
   // Inializa as variaveis de saida e entrada
-  pinMode(bluePin, OUTPUT);
-  pinMode(greenPin, OUTPUT);
-  pinMode(redPin, OUTPUT);
+  //pinMode(bluePin, OUTPUT);
+  //pinMode(greenPin, OUTPUT);
+  //pinMode(redPin, OUTPUT);
   pinMode(echo, INPUT); //DEFINE O PINO COMO ENTRADA (RECEBE)
   pinMode(trig, OUTPUT); //DEFINE O PINO COMO SAIDA (ENVIA)
   pinMode(powerButton, INPUT);
+  // configure LED PWM functionalitites
+  ledcSetup(redChannel, freq, resolution);
+  ledcSetup(greenChannel, freq, resolution);
+  ledcSetup(blueChannel, freq, resolution);
+  // attach the channel to the GPIO to be controlled
+  ledcAttachPin(redPin, redChannel);
+  ledcAttachPin(greenPin, greenChannel);
+  ledcAttachPin(bluePin, blueChannel);
   // Define as saidas desligadas
-  digitalWrite(bluePin, LOW);
-  digitalWrite(greenPin, LOW);
-  digitalWrite(redPin, LOW);
+  //digitalWrite(bluePin, LOW);
+  //digitalWrite(greenPin, LOW);
+  //digitalWrite(redPin, LOW);
   // Iniciando o LDR
   lightValue = analogRead(photoresistor);
   // Iniciando o sensor ultrasonico
@@ -217,7 +239,7 @@ void loop(){
     else
       ledOn = true;
     switchLED();
-    delay(1000);
+    delay(500);
   }
   if (client){ // Caso haja alguma conexao
     currentTime = millis();
@@ -240,6 +262,10 @@ void loop(){
             client.println("Content-type:text/html");
             client.println("Conexao: fechada");
             client.println();
+            // Recebe brilho do servidor
+            positionBrightness = header.indexOf("brightness") + 11;
+            Sbrightness = header.substring(positionBrightness, positionBrightness + 2);
+            brightness = Sbrightness.toInt();
             // Botões para escolher a cor
             if (header.indexOf("white") != -1){
               ledColor = 1;
@@ -304,7 +330,9 @@ void loop(){
             // Slider de Brilho
             client.println("<h3>Brilho</h3>");
             client.println("<div class=\"slidecontainer\">");
-            client.println("<input name=\"brightness\" type=\"range\" min=\"1\" max=\"100\" value=\"50\" class=\"slider\" id=\"myRange\">");
+            client.print("<input name=\"brightness\" type=\"range\" min=\"10\" max=\"99\" value=\"");
+            client.print(brightness);
+            client.println("\" class=\"slider\" id=\"myRange\">");
             client.println("</div><br>");
 
             // Botoes de Cores
@@ -346,6 +374,8 @@ void loop(){
   Serial.print("Distancia inicial: ");
   Serial.println(distanceInit);
   Serial.print("Distancia atual: ");
-  Serial.println(distanceValue);*/
+  Serial.println(distanceValue);
+  Serial.print("Brilho: ");
+  Serial.println(Sbrightness);*/
   delay(10);
 }
