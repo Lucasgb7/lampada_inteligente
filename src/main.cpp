@@ -14,7 +14,7 @@ String header;
 
 // Variaveis auxiliares
 static unsigned int counter = 0;
-int lightValue, distanceInit, distanceValue, ledColor = 1, delayTimer = 5, brightness = 99, positionBrightness, dutyCycle;
+int lightValue, distanceInit, distanceValue, ledColor = 1, delayTimer = 5, brightness = 99, positionBrightness, dutyCycle = 255;
 bool powerButtonState = false, ledOn = false, buttonOn = false;
 hw_timer_t * timer = NULL;
 String Sbrightness = "99";
@@ -66,6 +66,7 @@ int hcsr04();
 // Funções da aplicação
 void switchLED();
 void personDetection();
+void monitor();
 
 void setup(){
   Serial.begin(115200);
@@ -416,4 +417,5 @@ void monitor(){
   Serial.println(distanceValue);
   Serial.print("Brilho: ");
   Serial.println(Sbrightness);
+  delay(500);
 }
