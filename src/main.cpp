@@ -180,6 +180,7 @@ void setup(){
   pinMode(redPin, OUTPUT);
   pinMode(echo, INPUT); //DEFINE O PINO COMO ENTRADA (RECEBE)
   pinMode(trig, OUTPUT); //DEFINE O PINO COMO SAIDA (ENVIA)
+  pinMode(powerButton, INPUT);
   // Define as saidas desligadas
   digitalWrite(bluePin, LOW);
   digitalWrite(greenPin, LOW);
@@ -210,6 +211,14 @@ void loop(){
   distanceValue = hcsr04();
   personDetection();
   switchLED();
+  if(digitalRead(powerButton)){
+    if(ledOn)
+      ledOn = false;
+    else
+      ledOn = true;
+    switchLED();
+    delay(1000);
+  }
   if (client){ // Caso haja alguma conexao
     currentTime = millis();
     previousTime = currentTime;
