@@ -15,8 +15,7 @@ String header;
 // Variaveis auxiliares para fotoresistor e estado do botao de ligado/desligado
 static unsigned int counter = 0;
 int lightValue, distanceInit, distanceValue, ledColor = 1, delayTimer = 5;
-bool powerButtonState = false;
-long durationLED = 0;
+bool powerButtonState = false, ledOn = false;
 hw_timer_t * timer = NULL;
 
 // Define as saídas para seus pinos GPIO
@@ -82,7 +81,7 @@ void blackOut(){
 void stopTimer(){
     timerEnd(timer);
     timer = NULL;
-    blackOut();
+    ledOn = false;
 }
 
 void cb_timer(){
@@ -134,9 +133,8 @@ int hcsr04(){
 }
 
 void switchLED(){
-  if (lightValue < 1000){ // se o quarto estiver escuro
-    if(distanceValue < distanceInit){ // se tiver pessoa no quarto
-      switch (ledColor)
+  if(ledOn){
+    switch (ledColor)
       {
       case 2:
         redColor();
@@ -160,11 +158,18 @@ void switchLED(){
         whiteColor();
         break;
       }
+  }else
+    blackOut();
+}
+
+void personDetection(){
+  if (lightValue < 1000){ // se o quarto estiver escuro
+    if(distanceValue < distanceInit){ // se tiver pessoa no quarto
+      ledOn = true;
       counter = 0;
       startTimer();
     }
-  }else
-    blackOut();
+  }
 }
 
 void setup(){
@@ -203,9 +208,8 @@ void loop(){
   // Leitura de luminosidade
   lightValue = analogRead(photoresistor);
   distanceValue = hcsr04();
-  if(durationLED == 0){
-    switchLED();
-  }
+  personDetection();
+  switchLED();
   if (client){ // Caso haja alguma conexao
     currentTime = millis();
     previousTime = currentTime;
@@ -249,7 +253,12 @@ void loop(){
             if (header.indexOf("cyan") != -1){
               ledColor = 7;
             }
-
+            if (header.indexOf("LEDoff") != -1){
+                ledOn = false;
+            }
+            if (header.indexOf("LEDon") != -1){
+                ledOn = true;
+            }
             // Pagina Web em HTML
             client.println("<!DOCTYPE html><html>");
             client.println("<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
@@ -277,7 +286,11 @@ void loop(){
             client.println("<form id=\"myForm\"><center>");
             client.println("<h3>Ligar/Desligar</h3>");
             client.println("<div class=\"btn-group\">");
-            client.println("<button class=\"buttonPower\" name=\"power\" value=\"onoff\" type=\"submit\"><img src=\"powerButton.png\"></button>");
+            if(ledOn){
+              client.println("<button class=\"buttonPower\" name=\"power\" value=\"LEDoff\" type=\"submit\">ON/OFF</button>");
+            }else{
+              client.println("<button class=\"buttonPower\" name=\"power\" value=\"LEDon\" type=\"submit\">ON/OFF</button>");
+            }
             client.println("</div><br>");
             // Slider de Brilho
             client.println("<h3>Brilho</h3>");
@@ -319,11 +332,11 @@ void loop(){
     Serial.println("");
   }
 
-  Serial.print("Luminosidade: ");
+  /*Serial.print("Luminosidade: ");
   Serial.println(lightValue);
   Serial.print("Distancia inicial: ");
   Serial.println(distanceInit);
   Serial.print("Distancia atual: ");
-  Serial.println(distanceValue);
-  delay(1000);
+  Serial.println(distanceValue);*/
+  delay(10);
 }
