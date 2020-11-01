@@ -70,21 +70,20 @@ void personDetection();
 void setup(){
   Serial.begin(115200);
   // Inializa as variaveis de saida e entrada
-  pinMode(echo, INPUT); //DEFINE O PINO COMO ENTRADA (RECEBE)
-  pinMode(trig, OUTPUT); //DEFINE O PINO COMO SAIDA (ENVIA)
+  pinMode(echo, INPUT); // Entrada
+  pinMode(trig, OUTPUT); // Saída
   pinMode(powerButton, INPUT);
-  // configura as funcionalidades PWM do LED
+  // Configura as funcionalidades PWM do LED
   ledcSetup(redChannel, freq, resolution);
   ledcSetup(greenChannel, freq, resolution);
   ledcSetup(blueChannel, freq, resolution);
-  // vincula os canais com as portas a serem controladas
+  // Vincula os canais com as portas a serem controladas
   ledcAttachPin(redPin, redChannel);
   ledcAttachPin(greenPin, greenChannel);
   ledcAttachPin(bluePin, blueChannel);
-  // Iniciando o LDR
-  lightValue = analogRead(photoresistor);
-  // Iniciando o sensor ultrasonico
-  distanceInit = hcsr04();
+  // Iniciando leitura dos sensores analógicos
+  lightValue = analogRead(photoresistor); // Sensor LDR
+  distanceInit = hcsr04();                // Sensor Ultrasonico
   // Conecta a rede Wi-Fi com o SSID e password
   Serial.print("Conectando a rede ");
   Serial.println(ssid);
