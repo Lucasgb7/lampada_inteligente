@@ -70,8 +70,8 @@ void personDetection();
 void setup(){
   Serial.begin(115200);
   // Inializa as variaveis de saida e entrada
-  pinMode(echo, INPUT); // Entrada
-  pinMode(trig, OUTPUT); // Saída
+  pinMode(echo, INPUT);
+  pinMode(trig, OUTPUT);
   pinMode(powerButton, INPUT);
   // Configura as funcionalidades PWM do LED
   ledcSetup(redChannel, freq, resolution);
@@ -200,7 +200,7 @@ void loop(){
 
             // Cabeçalho da pagina WEB
             client.println("</style></head>");
-            client.println("<body><center><h1>Lampada Inteligente</h1></center><br>");
+            client.println("<body><center><h1>Lampada Inteligente</h1><h5>by Jonath & Lucas</h5></center><br>");
 
             // Corpo
             // Botao de Power
