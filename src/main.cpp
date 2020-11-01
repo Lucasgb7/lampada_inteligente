@@ -3,8 +3,8 @@
 #include "Ultrasonic.h"
 
 //Definindo as credenciais da rede Wi-Fi
-const char *ssid = "Unifique_WIFI_6387";
-const char *password = "68866696";
+const char *ssid = "Assembly";
+const char *password = "#code1304";
 
 // Define a porta do server como 80
 WiFiServer server(80);
@@ -353,15 +353,12 @@ void cb_timer(){
 
 // Função de leitura do sensor ultrasonico
 int hcsr04(){
-    digitalWrite(trig, LOW); //SETA O PINO TRIG COM UM PULSO BAIXO "LOW"
-    delayMicroseconds(2); //INTERVALO DE 2 MICROSSEGUNDOS
-    digitalWrite(trig, HIGH); //SETA O PINO TRIG COM PULSO ALTO "HIGH"
-    delayMicroseconds(10); //INTERVALO DE 10 MICROSSEGUNDOS
-    digitalWrite(trig, LOW); //SETA O PINO TRIG COM PULSO BAIXO "LOW" NOVAMENTE
-    //FUNÇÃO RANGING, FAZ A CONVERSÃO DO TEMPO DE
-    //RESPOSTA DO ECHO EM CENTIMETROS, E ARMAZENA
-    //NA VARIAVEL "distancia"
-    return (ultrasonic.Ranging(CM)); //VARIÁVEL GLOBAL RECEBE O VALOR DA DISTÂNCIA MEDIDA
+    digitalWrite(trig, LOW); 
+    delayMicroseconds(2); 
+    digitalWrite(trig, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trig, LOW); 
+    return (ultrasonic.Ranging(CM)); // Converte tempo do echo em "cm"
 }
 
 // Função para trocar as cores do LED
