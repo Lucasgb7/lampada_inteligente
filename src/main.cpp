@@ -12,10 +12,10 @@ WiFiServer server(80);
 // Variavel para armazenar o HTTP request
 String header;
 
-// Variaveis auxiliares para fotoresistor e estado do botao de ligado/desligado
+// Variaveis auxiliares
 static unsigned int counter = 0;
 int lightValue, distanceInit, distanceValue, ledColor = 1, delayTimer = 5, brightness = 99, positionBrightness, dutyCycle;
-bool powerButtonState = false, ledOn = false;
+bool powerButtonState = false, ledOn = false, buttonOn = false;
 hw_timer_t * timer = NULL;
 String Sbrightness = "99";
 
@@ -36,177 +36,51 @@ unsigned long currentTime = millis();
 unsigned long previousTime = 0;
 // Define o tempo maximo em milisegundos (exemplo: 2000ms = 2s)
 const long timeoutTime = 2000;
-// setting PWM properties
+// Configuração das propriedados do PWM
 const int freq = 5000;
 const int redChannel = 0;
 const int greenChannel = 1;
 const int blueChannel = 2;
 const int resolution = 8;
 
-//Funções responsáveis por definir as cores do led RGB
-void redColor(){
-  dutyCycle = (255 * brightness) / 100;
-  ledcWrite(redChannel, dutyCycle);
-  ledcWrite(greenChannel, 0);
-  ledcWrite(blueChannel, 0);
-}
-void blueColor(){
-  dutyCycle = (255 * brightness) / 100;
-  ledcWrite(redChannel, 0);
-  ledcWrite(greenChannel, 0);
-  ledcWrite(blueChannel, dutyCycle);
-}
-void greenColor(){
-  dutyCycle = (255 * brightness) / 100;
-  ledcWrite(redChannel, 0);
-  ledcWrite(greenChannel, dutyCycle);
-  ledcWrite(blueChannel, 0);
-}
-void whiteColor(){
-  dutyCycle = (255 * brightness) / 100;
-  ledcWrite(redChannel, dutyCycle);
-  ledcWrite(greenChannel, dutyCycle);
-  ledcWrite(blueChannel, dutyCycle);
-}
-void yellowColor(){
-  dutyCycle = (255 * brightness) / 100;
-  ledcWrite(redChannel, dutyCycle);
-  ledcWrite(greenChannel, dutyCycle);
-  ledcWrite(blueChannel, 0);
-}
-void magentaColor(){
-  dutyCycle = (255 * brightness) / 100;
-  ledcWrite(redChannel, dutyCycle);
-  ledcWrite(greenChannel, 0);
-  ledcWrite(blueChannel, dutyCycle);
-}
-void cyanColor(){
-  dutyCycle = (255 * brightness) / 100;
-  ledcWrite(redChannel, 0);
-  ledcWrite(greenChannel, dutyCycle);
-  ledcWrite(blueChannel, dutyCycle);
-}
-void blackOut(){
-  ledcWrite(redChannel, 0);
-  ledcWrite(greenChannel, 0);
-  ledcWrite(blueChannel, 0);
-}
+// funções de cor para o LED RGB
+void calculateDutyCycle();
+void redColor();
+void blueColor();
+void greenColor();
+void blueColor();
+void whiteColor();
+void yellowColor();
+void magentaColor();
+void cyanColor();
+void blackOut();
 
-void stopTimer(){
-    timerEnd(timer);
-    timer = NULL;
-    ledOn = false;
-}
+// Funções de interrupção do temporizador
+void startTimer();
+void stopTimer();
+void cb_timer();
 
-void cb_timer(){
-    Serial.print("Timer: ");
-    Serial.print(counter);
-    Serial.println(" segundos");
+// Leitura do sensor ultrasonico
+int hcsr04();
 
-    if (counter == delayTimer){
-        stopTimer();
-    }
-    counter++;
-}
-
-void startTimer(){
-    //inicialização do timer. Parametros:
-    /* 0 - seleção do timer a ser usado, de 0 a 3.
-      80 - prescaler. O clock principal do ESP32 é 80MHz. Dividimos por 80 para ter 1us por tick.
-    true - true para contador progressivo, false para regressivo
-    */
-    timer = timerBegin(0, 80, true);
-
-    /*conecta à interrupção do timer
-     - timer é a instância do hw_timer
-     - endereço da função a ser chamada pelo timer
-     - edge=true gera uma interrupção
-    */
-    timerAttachInterrupt(timer, &cb_timer, true);
-
-    /* - o timer instanciado no inicio
-       - o valor em us para 1s
-       - auto-reload. true para repetir o alarme
-    */
-    timerAlarmWrite(timer, 1000000, true); 
-
-    //ativa o alarme
-    timerAlarmEnable(timer);
-}
-
-int hcsr04(){
-    digitalWrite(trig, LOW); //SETA O PINO 6 COM UM PULSO BAIXO "LOW"
-    delayMicroseconds(2); //INTERVALO DE 2 MICROSSEGUNDOS
-    digitalWrite(trig, HIGH); //SETA O PINO 6 COM PULSO ALTO "HIGH"
-    delayMicroseconds(10); //INTERVALO DE 10 MICROSSEGUNDOS
-    digitalWrite(trig, LOW); //SETA O PINO 6 COM PULSO BAIXO "LOW" NOVAMENTE
-    //FUNÇÃO RANGING, FAZ A CONVERSÃO DO TEMPO DE
-    //RESPOSTA DO ECHO EM CENTIMETROS, E ARMAZENA
-    //NA VARIAVEL "distancia"
-    return (ultrasonic.Ranging(CM)); //VARIÁVEL GLOBAL RECEBE O VALOR DA DISTÂNCIA MEDIDA
-}
-
-void switchLED(){
-  if(ledOn){
-    switch (ledColor)
-      {
-      case 2:
-        redColor();
-        break;
-      case 3:
-        greenColor();
-        break;
-      case 4:
-        blueColor();
-        break;
-      case 5:
-        yellowColor();
-        break;
-      case 6:
-        magentaColor();
-        break;
-      case 7:
-        cyanColor();
-        break;
-      default:
-        whiteColor();
-        break;
-      }
-  }else
-    blackOut();
-}
-
-void personDetection(){
-  if (lightValue < 1000){ // se o quarto estiver escuro
-    if(distanceValue < distanceInit){ // se tiver pessoa no quarto
-      ledOn = true;
-      counter = 0;
-      startTimer();
-    }
-  }
-}
+// Funções da aplicação
+void switchLED();
+void personDetection();
 
 void setup(){
   Serial.begin(115200);
   // Inializa as variaveis de saida e entrada
-  //pinMode(bluePin, OUTPUT);
-  //pinMode(greenPin, OUTPUT);
-  //pinMode(redPin, OUTPUT);
   pinMode(echo, INPUT); //DEFINE O PINO COMO ENTRADA (RECEBE)
   pinMode(trig, OUTPUT); //DEFINE O PINO COMO SAIDA (ENVIA)
   pinMode(powerButton, INPUT);
-  // configure LED PWM functionalitites
+  // configura as funcionalidades PWM do LED
   ledcSetup(redChannel, freq, resolution);
   ledcSetup(greenChannel, freq, resolution);
   ledcSetup(blueChannel, freq, resolution);
-  // attach the channel to the GPIO to be controlled
+  // vincula os canais com as portas a serem controladas
   ledcAttachPin(redPin, redChannel);
   ledcAttachPin(greenPin, greenChannel);
   ledcAttachPin(bluePin, blueChannel);
-  // Define as saidas desligadas
-  //digitalWrite(bluePin, LOW);
-  //digitalWrite(greenPin, LOW);
-  //digitalWrite(redPin, LOW);
   // Iniciando o LDR
   lightValue = analogRead(photoresistor);
   // Iniciando o sensor ultrasonico
@@ -230,14 +104,22 @@ void loop(){
   WiFiClient client = server.available(); // Servidor disponivel para acesso
   // Leitura de luminosidade
   lightValue = analogRead(photoresistor);
+  // Leitura de distancia
   distanceValue = hcsr04();
-  personDetection();
+  // Caso tenha sido ligado pelo botão, a deteccao é desligada
+  if(!buttonOn)
+    personDetection();
+  // Ajusta cor e brilho do LED
   switchLED();
+  // Clique do botão físico
   if(digitalRead(powerButton)){
-    if(ledOn)
+    if(ledOn){
       ledOn = false;
-    else
+      buttonOn = false;
+    }else{
       ledOn = true;
+      buttonOn = true;
+    }
     switchLED();
     delay(500);
   }
@@ -252,20 +134,23 @@ void loop(){
         char c = client.read();
         Serial.write(c);
         header += c;
-        if (c == '\n') { // if the byte is a newline character
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
+        if (c == '\n') { // caso o byte seja uma nova linha
+          // Caso a linha atual esteja em branco, pega dois caracteres de nova linha de uma vez
+          // esse é o fim do requeste do cliente HTTP, então envia uma resposta:
           if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
+            // HTTP headers sempre começam o código de resposta (e.g. HTTP/1.1 200 OK)
+            // e o content-type, entao o cliente sabe oque está recebendo, entao uma linha em branco:
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println("Conexao: fechada");
             client.println();
             // Recebe brilho do servidor
-            positionBrightness = header.indexOf("brightness") + 11;
-            Sbrightness = header.substring(positionBrightness, positionBrightness + 2);
-            brightness = Sbrightness.toInt();
+            if(header.indexOf("brightness") != -1){
+              positionBrightness = header.indexOf("brightness") + 11;
+              Sbrightness = header.substring(positionBrightness, positionBrightness + 2);
+              brightness = Sbrightness.toInt();
+              calculateDutyCycle();
+            }
             // Botões para escolher a cor
             if (header.indexOf("white") != -1){
               ledColor = 1;
@@ -290,9 +175,11 @@ void loop(){
             }
             if (header.indexOf("LEDoff") != -1){
                 ledOn = false;
+                buttonOn = false;
             }
             if (header.indexOf("LEDon") != -1){
                 ledOn = true;
+                buttonOn = true;
             }
             // Pagina Web em HTML
             client.println("<!DOCTYPE html><html>");
@@ -347,7 +234,7 @@ void loop(){
             client.println("<button class=\"button7\" name=\"colorLED\" value=\"magenta\" type=\"submit\"> </button>");
             client.println("</div></form>");
 
-            // Script
+            // Script para o slider
             client.println("<script>");
             client.println("var slider = document.getElementById(\"myRange\"); slider.onmouseup = function() { document.getElementById(\"myForm\").submit(); }; slider.ontouchend = function() { document.getElementById(\"myForm\").submit(); };");
             client.println("</script></body></html>");
@@ -369,13 +256,165 @@ void loop(){
     Serial.println("");
   }
 
-  /*Serial.print("Luminosidade: ");
+  //monitor();
+  delay(10);
+}
+
+// Regra de três para passar a porcentagem de brilho para um valor do duty cycle
+void calculateDutyCycle(){
+  dutyCycle = (255 * brightness) / 100;
+}
+
+// Funções responsáveis por definir as cores do led RGB
+void redColor(){
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 0);
+}
+void blueColor(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, dutyCycle);
+}
+void greenColor(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, 0);
+}
+void whiteColor(){
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, dutyCycle);
+}
+void yellowColor(){
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, 0);
+}
+void magentaColor(){
+  ledcWrite(redChannel, dutyCycle);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, dutyCycle);
+}
+void cyanColor(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, dutyCycle);
+  ledcWrite(blueChannel, dutyCycle);
+}
+void blackOut(){
+  ledcWrite(redChannel, 0);
+  ledcWrite(greenChannel, 0);
+  ledcWrite(blueChannel, 0);
+}
+
+// Inicia a interrupção para o temporizador
+void startTimer(){
+    //inicialização do timer. Parametros:
+    /* 0 - seleção do timer a ser usado, de 0 a 3.
+      80 - prescaler. O clock principal do ESP32 é 80MHz. Dividimos por 80 para ter 1us por tick.
+    true - true para contador progressivo, false para regressivo
+    */
+    timer = timerBegin(0, 80, true);
+
+    /*conecta à interrupção do timer
+     - timer é a instância do hw_timer
+     - endereço da função a ser chamada pelo timer
+     - edge=true gera uma interrupção
+    */
+    timerAttachInterrupt(timer, &cb_timer, true);
+
+    /* - o timer instanciado no inicio
+       - o valor em us para 1s
+       - auto-reload. true para repetir o alarme
+    */
+    timerAlarmWrite(timer, 1000000, true); 
+
+    //ativa o alarme
+    timerAlarmEnable(timer);
+}
+
+// Para o temporizador
+void stopTimer(){
+    timerEnd(timer);
+    timer = NULL;
+    ledOn = false;
+}
+
+// Função do temporizador
+void cb_timer(){
+    Serial.print("Timer: ");
+    Serial.print(counter);
+    Serial.println(" segundos");
+
+    if (counter == delayTimer){
+        stopTimer();
+    }
+    counter++;
+}
+
+// Função de leitura do sensor ultrasonico
+int hcsr04(){
+    digitalWrite(trig, LOW); //SETA O PINO TRIG COM UM PULSO BAIXO "LOW"
+    delayMicroseconds(2); //INTERVALO DE 2 MICROSSEGUNDOS
+    digitalWrite(trig, HIGH); //SETA O PINO TRIG COM PULSO ALTO "HIGH"
+    delayMicroseconds(10); //INTERVALO DE 10 MICROSSEGUNDOS
+    digitalWrite(trig, LOW); //SETA O PINO TRIG COM PULSO BAIXO "LOW" NOVAMENTE
+    //FUNÇÃO RANGING, FAZ A CONVERSÃO DO TEMPO DE
+    //RESPOSTA DO ECHO EM CENTIMETROS, E ARMAZENA
+    //NA VARIAVEL "distancia"
+    return (ultrasonic.Ranging(CM)); //VARIÁVEL GLOBAL RECEBE O VALOR DA DISTÂNCIA MEDIDA
+}
+
+// Função para trocar as cores do LED
+void switchLED(){
+  if(ledOn){
+    switch (ledColor)
+      {
+      case 2:
+        redColor();
+        break;
+      case 3:
+        greenColor();
+        break;
+      case 4:
+        blueColor();
+        break;
+      case 5:
+        yellowColor();
+        break;
+      case 6:
+        magentaColor();
+        break;
+      case 7:
+        cyanColor();
+        break;
+      default:
+        whiteColor();
+        break;
+      }
+  }else
+    blackOut();
+}
+
+// Função para a ativação do LED a partir da luminosidade e do sensor ultrasonico
+void personDetection(){
+  if (lightValue < 1000){ // se o quarto estiver escuro
+    if(distanceValue < distanceInit){ // se tiver pessoa no quarto
+      ledOn = true;
+      counter = 0;
+      startTimer();
+    }
+  }
+}
+
+// Função para monitoramento das variáveis para o ambiente de desenvolvimento
+void monitor(){
+  Serial.print("Luminosidade: ");
   Serial.println(lightValue);
   Serial.print("Distancia inicial: ");
   Serial.println(distanceInit);
   Serial.print("Distancia atual: ");
   Serial.println(distanceValue);
   Serial.print("Brilho: ");
-  Serial.println(Sbrightness);*/
-  delay(10);
+  Serial.println(Sbrightness);
 }
