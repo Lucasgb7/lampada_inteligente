@@ -13,3 +13,6 @@ Com isso a solução proposta busca a entrega de mais funcionalidades, além das
 ## Projeto
 
 A lâmpada atuará com um interruptor comum, onde as funções novas serão acrescentadas, primeiramente temos um sensor de presença e de luminosidade para detectar quando existem pessoas dentro do ambiente e se o ambiente está escuro, e então acender a lâmpada, após 30 segundos do sensor sem captar nenhuma presença a lâmpada irá desligar. As outras funcionalidades serão implementadas através do uso de um smartphone, que pode desligar e ligar a lâmpada remotamente, alterar o brilho e trocar a cor da mesma. Abaixo está um desenho representativo das funcionalidades da lâmpada.
+
+## Apresentação
+https://youtu.be/hWoi7XUwkFk
